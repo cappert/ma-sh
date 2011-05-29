@@ -1,0 +1,48 @@
+        
+  <!-- Defining the ScoreloopUI activities -->
+
+<!-- the following are typcially used -->
+<activity android:name="com.scoreloop.client.android.ui.EntryScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.PostScoreOverlayActivity" android:theme="@style/sl_dialog"/>
+<activity android:name="com.scoreloop.client.android.ui.ShowResultOverlayActivity" android:theme="@style/sl_dialog"/>
+
+<!-- the following can be used if needed as direct entry points into ScoreloopUI -->
+<activity android:name="com.scoreloop.client.android.ui.BuddiesScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.LeaderboardsScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.ChallengesScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.AchievementsScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.SocialMarketScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.ProfileScreenActivity"/>
+
+<!-- the following must be there. Only if your game doesn't support a certain feature -->
+<!-- (for example news) you can skip activities in the respective component -->
+<!-- (for example NewsHeaderActivity and NewsListActivity) -->
+<activity android:name="com.scoreloop.client.android.ui.component.market.MarketHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.market.MarketListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.entry.EntryListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.post.PostOverlayActivity" android:theme="@style/sl_dialog"/>
+<activity android:name="com.scoreloop.client.android.ui.component.score.ScoreHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.score.ScoreListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.user.UserAddBuddyListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.user.UserHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.user.UserDetailListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.user.UserListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.game.GameDetailHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.game.GameDetailListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.game.GameListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.achievement.AchievementHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.achievement.AchievementListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.news.NewsHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.news.NewsListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.challenge.ChallengeHeaderActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.challenge.ChallengeListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.challenge.ChallengeAcceptListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.challenge.ChallengeCreateListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.challenge.ChallengePaymentActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.profile.ProfileSettingsListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.component.profile.ProfileSettingsPictureListActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.framework.ScreenActivity"/>
+<activity android:name="com.scoreloop.client.android.ui.framework.TabsActivity"/>
+  
+  
+      

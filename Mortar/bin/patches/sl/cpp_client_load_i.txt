@@ -1,0 +1,12 @@
+
+
+	///SCORELOOP <<<<<
+	S3DClient_InstallCurrentUserEventHook   ( "ScoreLoop", "onShowLeaderBoard",			ScoreLoopShowLeaderBoardCallback,        NULL ) ;
+	S3DClient_InstallCurrentUserEventHook   ( "ScoreLoop", "onShowMainScreen",			ScoreLoopShowMainScreenCallback,        NULL ) ;
+	S3DClient_InstallCurrentUserEventHook   ( "ScoreLoop", "onShowWelcomeBack",			ScoreLoopShowWelcomeBackCallback,        NULL ) ;
+	S3DClient_InstallCurrentUserEventHook   ( "ScoreLoop", "onSubmitAllAchievements",   ScoreLoopSubmitAllAchievementsCallback,        NULL ) ;
+	S3DClient_InstallCurrentUserEventHook   ( "ScoreLoop", "onSubmitScore",				ScoreLoopSubmitScoreCallback,        NULL ) ;
+	S3DClient_InstallCurrentUserEventHook   ( "ScoreLoop", "onUnlockAchievement",       ScoreLoopUnlockAchievementCallback,        NULL ) ;
+	///SCORELOOOP >>>>>
+
+	

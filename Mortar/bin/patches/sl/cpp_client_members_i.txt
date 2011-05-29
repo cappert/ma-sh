@@ -1,0 +1,4 @@
+
+
+static char  achievementId [64] = "" ;
+

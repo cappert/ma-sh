@@ -1,0 +1,179 @@
+
+
+///SCORELOOP <<<<<<<
+void ScoreLoopShowLeaderBoardCallback( unsigned char _iArgumentCount, const void *_pArguments, void *_pUserData )
+{
+	//public static void showLeaderBoard(int nMode, int nType)
+	int nMode = -1;
+	int nType = -1;
+
+    if ( _pArguments && ( _iArgumentCount == 2 ) )
+    {
+        const S3DX::AIVariable *pVariables = (const S3DX::AIVariable *)_pArguments ;
+
+        if ( pVariables[0].GetType ( ) == S3DX::AIVariable::eTypeNumber ) nMode = pVariables[0].GetNumberValue ( ) ;
+        if ( pVariables[1].GetType ( ) == S3DX::AIVariable::eTypeNumber ) nType = pVariables[1].GetNumberValue ( ) ;
+    }
+
+    if ( pJavaVM )
+    {
+        JNIEnv *pEnv ;
+        if    ( pJavaVM->GetEnv ( (void**) &pEnv, JNI_VERSION_1_4 ) >= 0 )
+        {
+            jclass pClass  = pEnv->FindClass ( "com/modernalchemists/aaargpimples/AaargPimples" );
+            if   ( pClass != 0 )
+            {
+                jmethodID pMethod = pEnv->GetStaticMethodID ( pClass, "showLeaderBoard", "(II)V");
+				if      ( pMethod )
+                {
+					pEnv->CallStaticVoidMethod ( pClass, pMethod, nMode, nType ) ;
+                }
+            }
+        }
+    }
+}
+
+void ScoreLoopShowMainScreenCallback( unsigned char _iArgumentCount, const void *_pArguments, void *_pUserData )
+{
+	//  public static int showMainScreen()
+    if ( pJavaVM )
+    {
+        JNIEnv *pEnv ;
+        if    ( pJavaVM->GetEnv ( (void**) &pEnv, JNI_VERSION_1_4 ) >= 0 )
+        {
+            jclass pClass  = pEnv->FindClass ( "com/modernalchemists/aaargpimples/AaargPimples" );
+            if   ( pClass != 0 )
+            {
+                jmethodID pMethod = pEnv->GetStaticMethodID ( pClass, "showMainScreen", "()V");
+				if      ( pMethod )
+                {
+					pEnv->CallStaticVoidMethod ( pClass, pMethod ) ;
+                }
+            }
+        }
+    }
+}
+
+void ScoreLoopShowWelcomeBackCallback( unsigned char _iArgumentCount, const void *_pArguments, void *_pUserData )
+{
+	int nDelay = -1;
+
+    if ( _pArguments && ( _iArgumentCount == 1 ) )
+    {
+        const S3DX::AIVariable *pVariables = (const S3DX::AIVariable *)_pArguments ;
+
+        if ( pVariables[0].GetType ( ) == S3DX::AIVariable::eTypeNumber ) nDelay = pVariables[0].GetNumberValue ( ) ;
+    }
+
+	//public static int showWelcomeBack(int nDelayInMsec)
+    if ( pJavaVM )
+    {
+        JNIEnv *pEnv ;
+        if    ( pJavaVM->GetEnv ( (void**) &pEnv, JNI_VERSION_1_4 ) >= 0 )
+        {
+            jclass pClass  = pEnv->FindClass ( "com/modernalchemists/aaargpimples/AaargPimples" );
+            if   ( pClass != 0 )
+            {
+                jmethodID pMethod = pEnv->GetStaticMethodID ( pClass, "showWelcomeBack", "(I)V");
+				if      ( pMethod )
+                {
+					pEnv->CallStaticVoidMethod ( pClass, pMethod, nDelay ) ;
+                }
+            }
+        }
+    }
+}
+
+void ScoreLoopSubmitAllAchievementsCallback( unsigned char _iArgumentCount, const void *_pArguments, void *_pUserData )
+{
+	//public static int submitAllAchievements()
+    if ( pJavaVM )
+    {
+        JNIEnv *pEnv ;
+        if    ( pJavaVM->GetEnv ( (void**) &pEnv, JNI_VERSION_1_4 ) >= 0 )
+        {
+            jclass pClass  = pEnv->FindClass ( "com/modernalchemists/aaargpimples/AaargPimples" );
+            if   ( pClass != 0 )
+            {
+                jmethodID pMethod = pEnv->GetStaticMethodID ( pClass, "submitAllAchievements", "()V");
+				if      ( pMethod )
+                {
+					pEnv->CallStaticVoidMethod ( pClass, pMethod ) ;
+                }
+            }
+        }
+    }
+}
+
+void ScoreLoopSubmitScoreCallback( unsigned char _iArgumentCount, const void *_pArguments, void *_pUserData )
+{
+	// public static int submitScore(double nScore, int nMode)
+	float nScore = -1;
+	int nMode = -1;
+
+    if ( _pArguments && ( _iArgumentCount == 2 ) )
+    {
+        const S3DX::AIVariable *pVariables = (const S3DX::AIVariable *)_pArguments ;
+
+        if ( pVariables[0].GetType ( ) == S3DX::AIVariable::eTypeNumber ) nScore = pVariables[0].GetNumberValue ( ) ;
+        if ( pVariables[1].GetType ( ) == S3DX::AIVariable::eTypeNumber ) nMode = pVariables[1].GetNumberValue ( ) ;
+    }
+
+    if ( pJavaVM )
+    {
+        JNIEnv *pEnv ;
+        if    ( pJavaVM->GetEnv ( (void**) &pEnv, JNI_VERSION_1_4 ) >= 0 )
+        {
+            jclass pClass  = pEnv->FindClass ( "com/modernalchemists/aaargpimples/AaargPimples" );
+            if   ( pClass != 0 )
+            {
+                jmethodID pMethod = pEnv->GetStaticMethodID ( pClass, "submitScore", "(DI)V");
+				if      ( pMethod )
+                {
+					pEnv->CallStaticVoidMethod ( pClass, pMethod, nScore, nMode ) ;
+                }
+            }
+        }
+	}
+}
+
+void ScoreLoopUnlockAchievementCallback( unsigned char _iArgumentCount, const void *_pArguments, void *_pUserData )
+{
+	//public static int unlockAchievement(String sId, boolean bShowToast, boolean bSubmitNow )
+
+	bool bShowToast;
+	bool bSubmitNow;
+
+    if ( _pArguments && ( _iArgumentCount == 3 ) )
+    {
+        const S3DX::AIVariable *pVariables = (const S3DX::AIVariable *)_pArguments ;
+
+       if ( pVariables[0].GetType ( ) == S3DX::AIVariable::eTypeString )
+        {
+            strncpy ( achievementId, pVariables[0].GetStringValue ( ), 63 ) ;
+        }
+
+        if ( pVariables[1].GetType ( ) == S3DX::AIVariable::eTypeBoolean ) bShowToast = pVariables[1].GetBooleanValue ( ) ;
+        if ( pVariables[2].GetType ( ) == S3DX::AIVariable::eTypeBoolean ) bSubmitNow = pVariables[2].GetBooleanValue ( ) ;
+    }
+
+    if ( pJavaVM )
+    {
+        JNIEnv *pEnv ;
+        if    ( pJavaVM->GetEnv ( (void**) &pEnv, JNI_VERSION_1_4 ) >= 0 )
+        {
+            jclass pClass  = pEnv->FindClass ( "com/modernalchemists/aaargpimples/AaargPimples" );
+            if   ( pClass != 0 )
+            {
+                jmethodID pMethod = pEnv->GetStaticMethodID ( pClass, "unlockAchievement", "(Ljava/lang/String;ZZ)V");
+				if      ( pMethod )
+                {
+					pEnv->CallStaticVoidMethod ( pClass, pMethod, pEnv->NewStringUTF ( achievementId ), bShowToast, bSubmitNow ) ;
+				}
+            }
+        }
+	}
+}
+///SCORELOOP >>>>>>
+
+

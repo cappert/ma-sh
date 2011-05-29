@@ -1,0 +1,1059 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml"
+creationComplete="creationCompleteHandler();"
+    width="1024" height="660"
+>
+    <mx:Script>
+        <![CDATA[
+		import mx.events.FlexEvent;
+
+		public static const OS_TYPE:String = flash.system.Capabilities.os.substr(0, 3);
+		public static const OS_WIN:String = "Win";
+		public static const OS_MAC:String = "Mac";
+		
+		private function creationCompleteHandler():void
+		{
+			switch( OS_TYPE )
+			{
+				case OS_WIN:
+				log("OS: Windows");
+				break;
+                
+                case OS_MAC:
+                log("OS: Mac");
+                break;
+			}
+			
+			
+			loadSettings();
+		} 
+        ]]>
+    </mx:Script>
+	
+	<mx:Script>
+		<![CDATA[
+        import flash.desktop.NativeProcess;
+        import flash.desktop.NativeProcessStartupInfo;
+        import flash.errors.IOError;
+        import flash.events.Event;
+        import flash.events.NativeProcessExitEvent;
+        import flash.events.ProgressEvent;
+        import flash.filesystem.File;
+        import mx.collections.ArrayCollection;
+        import mx.controls.Alert;
+
+		private const PATCH_SUCCESSFUL:int = 1;
+		private const PATCH_AFTER_NOT_FOUND:int = -2;
+		private const HEADER_STRING:String = "/*\tThis file has been patched by the allmighty Zog! \n\t(c)Modern Alchemists: www.modern-alchemists.com\n\tThis is free software, so in return, please buy our games! =)\n*/\n\n";
+		
+		private var S3DX_PATH:String 		= File.applicationDirectory.nativePath + "/files/s3dx/";
+		private var ADMOB_JAR:String 		= File.applicationDirectory.nativePath  + "/files/maad/admob-sdk-android.jar";
+        private var ADMOB_WRAPPER:String 	= File.applicationDirectory.nativePath  + "/files/maad/AdMobWrapper.java";
+        private var MAAD_C:String       	= File.applicationDirectory.nativePath  + "/files/maad/maad.c";
+        
+		private var PROJ_PATH:String 		= "D:/ShiVaGames/AuthoringTool/AaargPimples/AaargPimples";
+		private var BUNDLE_ID:String 		= "com.modernalchemists.aaargpimples";
+		private var PROJ_NAME:String 		= "AaargPimples";
+		
+		private var MA_KEYSTORE:String 		= File.applicationDirectory.nativePath + "/settings/MaKeystore.maks";
+		private var KEYSTORE:String 		= "keystore";
+		private var KEYPASS:String 			= "keypass";
+		private var ALIAS:String 			= "alias";
+		
+		private var ANT_HOME:String 			= "ant home";
+		private var ANDROID_SDK_HOME:String 	= "android sdk home";
+		private var JAVA_HOME:String 			= "java home";
+		
+		private var SCORE_LOOP_JAR:String 	= File.applicationDirectory.nativePath + "/files/scoreloop-core.jar";
+		private var SL_GAME_ID:String = "";
+		private var SL_GAME_SECRET:String = "";
+		
+		private var succeeded:Boolean = true;
+		private var process:NativeProcess = new NativeProcess();
+		[Bindable] private var consoleOutput:ArrayCollection = new ArrayCollection();
+		[Bindable] private var LABEL_WIDTH:int = 90;
+	
+		//TODO: patch once...
+		//TODO: headers for XML and C/Cpp
+		//TODO: AdMob: optional admob publisher id
+		//TODO: AdMob fertig integrieren.
+		//OPT: OpenFeint integrieren
+	
+		private function prePatch():void
+		{
+			//Copy stuff:
+			//NOTE: copy dir deletes all the files in the new dir. That's why I copy each file manually... :/
+		
+			//S3DX files:
+			try
+			{
+				copyFile( S3DX_PATH + "/S3DXAIConstant.h", 	PROJ_PATH + "/jni/S3DXAIConstant.h" );
+				copyFile( S3DX_PATH + "/S3DXAIEngineAPI.h", PROJ_PATH + "/jni/S3DXAIEngineAPI.h" );
+				copyFile( S3DX_PATH + "/S3DXAIFunction.h", 	PROJ_PATH + "/jni/S3DXAIFunction.h" );
+				copyFile( S3DX_PATH + "/S3DXAIModel.h", 	PROJ_PATH + "/jni/S3DXAIModel.h" );
+				copyFile( S3DX_PATH + "/S3DXAIPackage.h", 	PROJ_PATH + "/jni/S3DXAIPackage.h" );
+				copyFile( S3DX_PATH + "/S3DXAIVariable.h", 	PROJ_PATH + "/jni/S3DXAIVariable.h" );
+				copyFile( S3DX_PATH + "/S3DXAIVariables.h", PROJ_PATH + "/jni/S3DXAIVariables.h" );
+				copyFile( S3DX_PATH + "/S3DXConfig.h", 		PROJ_PATH + "/jni/S3DXConfig.h" );
+				copyFile( S3DX_PATH + "/S3DXMacros.h", 		PROJ_PATH + "/jni/S3DXMacros.h" );
+				copyFile( S3DX_PATH + "/S3DXPlatform.h", 	PROJ_PATH + "/jni/S3DXPlatform.h" );
+				copyFile( S3DX_PATH + "/S3DXPlugin.h", 		PROJ_PATH + "/jni/S3DXPlugin.h" );
+				copyFile( S3DX_PATH + "/S3DXTypes.h", 		PROJ_PATH + "/jni/S3DXTypes.h" );
+				
+				//Custom __PROJ_NAME__.java:
+				var jGame:String = PROJ_PATH + "/src";
+				
+				var bundleBits:Array = BUNDLE_ID.split(".");
+				var bundlePath:String = "";
+				for (var i:int = 0; i < bundleBits.length; i++)
+				{
+					jGame += "/" +  bundleBits[i];
+					bundlePath +=  bundleBits[i] + "/"
+				}
+
+					
+				//AndroidManifest.xml
+				replaceInFile( PROJ_PATH + "/AndroidManifest.xml",
+					"android:launchMode=\"singleInstance\"",
+					"android:launchMode=\"standard\"" );
+					
+					
+				var patchFilePath:String = File.applicationDirectory.nativePath + "/patches/";
+				//__PROJ__/jni/S3DClient.cpp
+				var success:int = patchFileAfter( PROJ_PATH + "/jni/S3DClient.cpp", 
+					loadFileToString( patchFilePath + "common/cpp_client_header_a.txt" ),
+					loadFileToString( patchFilePath + "common/cpp_client_header_i.txt" )
+				);			
+		
+						
+			}
+			catch ( err:IOError )
+			{
+				succeeded = false;
+				Alert.show(err.message + "\nMaybe Path to S3DX is incorrect?");
+			}			
+			
+		}
+		
+		private function postPatch():void
+		{
+			if ( succeeded )
+			{
+				//Alert.show("Pachting succeeded.\nPost-Build options currently not available.", "Succeeded");
+                Alert.show("Pachting succeeded!", "Succeeded");
+				/*
+				if(NativeProcess.isSupported)
+				{
+					if ( bAntBuild.selected )
+					{
+						startAntBuild();
+					}
+				}*/			
+			}
+			else
+			{
+				Alert.show("Something went wrong! Please dial 1-800-MORTAR-ME", "Epic fail!");
+			}
+		}
+		
+		private function patchAdMob():void
+		{
+            //__PROJ__/__BUNDLE_ID__/__PROJ_NAME__.java:
+            var jGame:String = PROJ_PATH + "/src";
+            
+            var bundleBits:Array = BUNDLE_ID.split(".");
+            var bundlePath:String = "";
+            for (var i:int = 0; i < bundleBits.length; i++)
+            {
+                jGame += "/" +  bundleBits[i];
+                bundlePath +=  bundleBits[i] + "/"
+            }
+            
+            jGame += "/" +  PROJ_NAME + ".java";
+            log("Game java file is:" + jGame);
+
+            
+			try
+			{
+                log("Copy file " + ADMOB_JAR + " to " + PROJ_PATH + "/libs/admob.jar" );
+				copyFile( ADMOB_JAR, PROJ_PATH + "/libs/admob.jar" );
+                
+                log("Copy file " + ADMOB_WRAPPER + " to " + PROJ_PATH + "/src/com/modernalchemists/maad/android/AdMobWrapper.java" );
+                copyFile( ADMOB_WRAPPER, PROJ_PATH + "/src/com/modernalchemists/maad/android/AdMobWrapper.java" );
+                
+                log("Copy file " + MAAD_C + " to " + PROJ_PATH + "/jni/maad.c");
+                copyFile( MAAD_C, PROJ_PATH + "/jni/maad.c" );
+			}
+			catch ( err:IOError )
+			{
+				succeeded = false;
+				Alert.show(err.message + "\nError copying files.");
+			}
+			
+			//Patching Eclispe files:
+			var patchFilePath:String = File.applicationDirectory.nativePath + "/patches/admob/";
+            
+			try
+			{
+                log("Patching Admob related file: .classpath");
+                var success:int = patchFileBefore( PROJ_PATH + "/.classpath", 
+					"</classpath>",
+					"<classpathentry kind=\"lib\" exported=\"true\" path=\"libs/admob.jar\"/>\n"
+				);
+                
+                
+                log("Patching Admob related file:" + jGame);
+				success = patchFileAfter( jGame, 
+					loadFileToString( patchFilePath + "java_import_a.txt" ),
+					loadFileToString( patchFilePath + "java_import_i.txt" )
+				);
+                
+
+
+				success = patchFileAfter( jGame, 
+					loadFileToString( patchFilePath + "java_view_a.txt" ),
+					loadFileToString( patchFilePath + "java_view_i.txt" )
+				);
+                
+				
+				success = patchFileBefore( jGame, 
+					loadFileToString( patchFilePath + "java_visible_b.txt" ),
+					loadFileToString( patchFilePath + "java_visible_i.txt" )
+				);
+				
+				success = patchFileAfter( jGame, 
+					loadFileToString( patchFilePath + "java_addToView_a.txt" ),
+					loadFileToString( patchFilePath + "java_addToView_i.txt" )
+				);
+						
+
+				
+				
+				//AndroidManifest.xml
+                log("Patching Admob related file:AndroidManifest.xml");
+				success = patchFileAfter( PROJ_PATH + "/AndroidManifest.xml", 
+					loadFileToString( patchFilePath + "amanifest_inet_a.txt" ),
+					loadFileToString( patchFilePath + "amanifest_inet_i.txt" )
+				);
+
+				success = patchFileBefore( PROJ_PATH + "/AndroidManifest.xml", 
+					loadFileToString( patchFilePath + "amanifest_puid_b.txt" ),
+					loadFileToString( patchFilePath + "amanifest_puid_i.txt" )
+				);
+
+				
+                log("Patching Admob related file:S3DClient.cpp");
+				success = patchFileAfter( PROJ_PATH + "/jni/S3DClient.cpp", 
+					loadFileToString( patchFilePath + "cpp_client_include_a.txt" ),
+					loadFileToString( patchFilePath + "cpp_client_include_i.txt" )
+				);
+                
+				success = patchFileAfter( PROJ_PATH + "/jni/S3DClient.cpp", 
+					loadFileToString( patchFilePath + "cpp_client_load_a.txt" ),
+					loadFileToString( patchFilePath + "cpp_client_load_i.txt" )
+				);
+				
+                
+                if ( success != PATCH_SUCCESSFUL )
+                {
+                    succeeded = false;
+                }
+				
+			}
+			catch ( err:IOError )
+			{
+				succeeded = false;
+				Alert.show(err.message + "\nError patching files. Check project path, bundle id and project name!");
+			}
+			
+			
+			/*
+			if ( succeeded )
+			{
+				//Alert.show("Success.");
+
+				if(NativeProcess.isSupported)
+				{
+					if ( bAntBuild.selected )
+					{
+						startAntBuild();
+					}
+				}			
+			}*/
+		}
+		
+		
+        /*
+		private function startAntBuild():void
+		{
+			//"%ANT_HOME%/bin/ant" -buildfile "%1"
+			
+			var file:File = File.desktopDirectory.resolvePath(PROJ_PATH + "/.project");
+			file = file.resolvePath(File.applicationDirectory.nativePath + "/settings/antbuild.cmd");
+			
+			var nativeProcessStartupInfo:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+			nativeProcessStartupInfo.executable = file;
+			
+			var args:Vector.<String> = new Vector.<String>();
+			var buildFile:String = PROJ_PATH + "/build.xml";
+			//var antExe:String = "\"" + ANT_HOME + "/bin/ant\"";
+			//var buildFile:String = "-buildfile \"" + PROJ_PATH + "/build.xml\"";
+			//antExe += " " + buildFile;
+			//args.push(antExe);
+			args.push(buildFile);
+			nativeProcessStartupInfo.arguments = args;
+			
+			process = new NativeProcess();
+			process.addEventListener(NativeProcessExitEvent.EXIT, onBuildProcessExit);
+			process.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, onOutput);
+			
+			process.start(nativeProcessStartupInfo);
+			//trace("build");
+		
+		}
+        */
+		
+        /*
+		private function onBuildProcessExit(e:Event):void 
+		{
+			//trace("done bnuild");
+			if ( bSignAPK.selected )
+			{
+				startSignAPK();
+			}
+		}
+        */
+		
+        /*
+		private function startSignAPK():void
+		{
+			var file:File = File.desktopDirectory.resolvePath(PROJ_PATH + "/.project");
+			file = file.resolvePath(File.applicationDirectory.nativePath + "/settings/adbsign.cmd");
+			
+			var nativeProcessStartupInfo:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+			nativeProcessStartupInfo.executable = file;
+			
+			var args:Vector.<String> = new Vector.<String>();
+			var buildFile:String = PROJ_PATH + "/bin/" + PROJ_NAME + "-unsigned.apk";
+			args.push(buildFile);
+			args.push(KEYSTORE);
+			args.push(KEYPASS);
+			args.push(ALIAS);
+			nativeProcessStartupInfo.arguments = args;
+			
+			process.removeEventListener(NativeProcessExitEvent.EXIT, onBuildProcessExit);
+
+			process = new NativeProcess();
+			process.addEventListener(NativeProcessExitEvent.EXIT, onSignAPKProcessExit);
+			process.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, onOutput);
+			
+			process.start(nativeProcessStartupInfo);			
+		}
+        */
+		
+        /*
+		private function onSignAPKProcessExit(e:Event):void 
+		{
+			if ( bInsallOnDevice.selected )
+			{
+				startInstallOnDevice();
+			}
+		}
+        */
+		
+        /*
+		private function startInstallOnDevice():void
+		{
+			var file:File = File.desktopDirectory.resolvePath(PROJ_PATH + "/.project");
+			file = file.resolvePath(File.applicationDirectory.nativePath + "/settings/adbinstall.cmd");
+			
+			var nativeProcessStartupInfo:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+			nativeProcessStartupInfo.executable = file;
+			
+			var args:Vector.<String> = new Vector.<String>();
+			var buildFile:String = PROJ_PATH + "/bin/" + PROJ_NAME + "-unsigned.apk";
+			args.push(buildFile);
+			nativeProcessStartupInfo.arguments = args;
+			
+			process.removeEventListener(NativeProcessExitEvent.EXIT, onSignAPKProcessExit);
+			
+			process = new NativeProcess();
+			process.addEventListener(NativeProcessExitEvent.EXIT, onInstallOnDeviceProcessExit);
+			process.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, onOutput);
+			
+			process.start(nativeProcessStartupInfo);			
+		}
+        */
+		
+        /*
+		private function onInstallOnDeviceProcessExit(e:Event):void 
+		{
+			//trace("done signing APK");
+		}
+        */
+        
+        private function log(message:String):void
+        {
+            consoleOutput.addItem(message);
+        }
+				
+		private function onOutput(event:ProgressEvent):void
+		{
+			consoleOutput.addAll(new ArrayCollection(process.standardOutput.readUTFBytes(process.standardOutput.bytesAvailable).split('\n')));
+		}
+		
+		private function copyDirectory( dirToCopy:String, newLocation:String ):void 
+		{
+			var originalLoc:File = File.desktopDirectory.resolvePath( dirToCopy );
+			var copyLoc:File = File.desktopDirectory.resolvePath( newLocation );
+			originalLoc.copyTo( copyLoc, true ); //bool = overwrite
+		}
+		
+		private function copyFile( fileToCopy:String, newLocation:String ):void
+		{
+			var originalLoc:File = File.desktopDirectory.resolvePath( fileToCopy );
+			var copyLoc:File = File.desktopDirectory.resolvePath( newLocation );
+			originalLoc.copyTo( copyLoc, true );
+		}
+		
+		
+		private function getFilesRecursive(folder:String, outFileList:Array):void
+		{
+			//var fileList:Array = new Array();
+            //the current folder object
+            var currentFolder:File = File.desktopDirectory.resolvePath( folder );
+            
+            //the current folder's file listing
+            var files:Array = currentFolder.getDirectoryListing();
+            
+            //iterate and put files in the result and process the sub folders recursively
+            for (var f:int = 0; f < files.length; f++) {
+                if ( (files[f] as File).isDirectory) {
+                    if ((files[f] as File).name !="." && (files[f] as File).name !="..") {
+                        //it's a directory
+                        getFilesRecursive((files[f] as File).nativePath, outFileList);
+                    }
+                } else {
+                    //it's a file yupeee
+                    outFileList.push((files[f] as File).nativePath);
+                }
+            }            
+            
+			//return fileList;
+        }
+       
+        	
+		
+		
+		/**
+		 * 
+		 * @param	filename
+		 * @param	after
+		 * @param	insert
+		 * @return
+		 */
+		private function patchFileAfter( filename:String, after:String, insert:String ):int 
+		{
+			//1) Load file content to string:
+			var str:String = loadFileToString( filename );
+			//trace( str );
+
+			//trace ("####################\n" + after + "\n##################\n" );
+			
+			//2) Find the location to insert patch string:
+			var pos:int = str.indexOf( after );
+			//trace( "pos:" + pos );
+			
+			if ( pos == -1 )
+			{
+				return PATCH_AFTER_NOT_FOUND;
+			}
+			
+			//2.5) Insert header info:
+			var hPos:int = str.indexOf( HEADER_STRING );
+			if ( hPos == -1 )
+			{
+				//str = HEADER_STRING + str;
+			}
+	
+			
+			//3) Insert the patch string:
+			var parts:Array = str.split( after );
+			
+			if ( parts.length != 2 )
+			{
+				throw new Error( "Couldn't split string, or split it into more than one piece." );
+			}
+			
+			var newString:String = "";
+		
+			newString = parts[0] + after + insert + parts[1];
+			
+			//trace( "\n\n" + newString);
+			
+			//4) Save the new file to old location:
+			var file:File = File.desktopDirectory.resolvePath(filename);
+			var fileStream:FileStream = new FileStream();
+			fileStream.open(file, FileMode.WRITE);
+			fileStream.writeUTFBytes(newString);
+			fileStream.close();
+			
+			return PATCH_SUCCESSFUL;
+		}
+		
+	private function patchFileBefore( filename:String, before:String, insert:String ):int 
+		{
+			//1) Load file content to string:
+			var str:String = loadFileToString( filename );
+			//trace( str );
+
+			//trace ("####################\n" + before + "\n##################\n" );
+			
+			//2) Find the location to insert patch string:
+			var pos:int = str.indexOf( before );
+			//trace( "pos:" + pos );
+			
+			if ( pos == -1 )
+			{
+				return PATCH_AFTER_NOT_FOUND;
+			}
+			
+			//2.5) Insert header info:
+			var hPos:int = str.indexOf( HEADER_STRING );
+			if ( hPos == -1 )
+			{
+				//str = HEADER_STRING + str;
+			}
+
+			
+			//3) Insert the patch string:
+			var parts:Array = str.split( before );
+			
+			if ( parts.length != 2 )
+			{
+				throw new Error( "Couldn't split string, or split it into more than one piece." );
+			}
+			
+			var newString:String = "";
+			newString = parts[0] + insert + before + parts[1];
+			
+			//trace( "\n\n" + newString);
+			
+			//4) Save the new file to old location:
+			var file:File = File.desktopDirectory.resolvePath(filename);
+			var fileStream:FileStream = new FileStream();
+			fileStream.open(file, FileMode.WRITE);
+			fileStream.writeUTFBytes(newString);
+			fileStream.close();
+			
+			return PATCH_SUCCESSFUL;
+		}
+			
+		private function replaceInFile(filename:String, findStr:String, replaceStr:String):void
+		{
+			var projFileStr:String = loadFileToString( filename )
+			projFileStr = replace( projFileStr, findStr, replaceStr); 
+
+			var file:File = File.desktopDirectory.resolvePath(filename);
+			var fileStream:FileStream = new FileStream();
+			fileStream.open(file, FileMode.WRITE);
+			fileStream.writeUTFBytes(projFileStr);
+			fileStream.close();			
+		}
+		
+		private function loadFileToString( filename:String ):String 
+		{
+			var file:File = File.applicationDirectory.resolvePath(filename);
+			//var file:File = File.desktopDirectory.resolvePath(filename);
+			var fileStream:FileStream = new FileStream();
+			fileStream.open(file, FileMode.READ);
+			//var str:String = fileStream.readMultiByte(file.size, File.systemCharset);
+			var str:String = fileStream.readUTFBytes(file.size);
+			//trace( str );
+			fileStream.close();
+
+			return str;
+		}
+		
+		private function replace(input:String, replace:String, replaceWith:String):String
+		{
+			//change to StringBuilder
+			var sb:String = new String();
+			var found:Boolean = false;
+		 
+			var sLen:Number = input.length;
+			var rLen:Number = replace.length;
+		 
+			for (var i:Number = 0; i < sLen; i++)
+			{
+				if(input.charAt(i) == replace.charAt(0))
+				{
+					found = true;
+					for(var j:Number = 0; j < rLen; j++)
+					{
+						if(!(input.charAt(i + j) == replace.charAt(j)))
+						{
+							found = false;
+							break;
+						}
+					}
+		 
+					if(found)
+					{
+						sb += replaceWith;
+						i = i + (rLen - 1);
+						continue;
+					}
+				}
+				sb += input.charAt(i);
+			}
+			//TODO : if the string is not found, should we return the original
+			//string?
+			return sb;
+		}
+
+		]]>
+	</mx:Script>
+	
+	<mx:Script>
+		<![CDATA[
+		import flash.events.Event;
+		import flash.filesystem.File;
+		private var directory:File = File.documentsDirectory;
+/*
+		private function onBrowseS3DX():void
+		{
+			directory.addEventListener(Event.SELECT, selectedS3DX);
+			directory.browseForDirectory("Path to S3DX folder.");
+		}
+		
+		private function selectedS3DX(e:Event):void {
+			S3DX_PATH = s3dx.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, selectedS3DX);
+		}
+*/
+		/*
+		private function onBrowseAdMobJAR():void
+		{
+			directory.addEventListener(Event.SELECT, selectedAdMobJAR);
+			directory.browse();
+		}
+		
+		private function selectedAdMobJAR(e:Event):void {
+			ADMOB_JAR = admobjar.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, selectedAdMobJAR);
+		}
+		*/
+		private function onBrowseProjectPath():void
+		{
+			directory.addEventListener(Event.SELECT, selectedProjectPath);
+			directory.browseForDirectory("Path to Android/Eclipse-Project.");
+		}
+
+		private function selectedProjectPath(e:Event):void {
+			PROJ_PATH = proj.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, selectedProjectPath);
+		}		
+
+		/*
+		private function onBrowseAntHome():void
+		{
+			directory.addEventListener(Event.SELECT, selectedAntHome);
+			directory.browseForDirectory("Path to Ant Home.");
+		}
+
+		
+		private function selectedAntHome(e:Event):void {
+			ANT_HOME = antHome.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, selectedAntHome);
+		}
+		
+		private function onBrowseAndroidHome():void
+		{
+			directory.addEventListener(Event.SELECT, selectedAndroidHome);
+			directory.browseForDirectory("Path to Android SDK Home.");
+		}
+
+		private function selectedAndroidHome(e:Event):void {
+			ANDROID_SDK_HOME = androidHome.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, selectedAndroidHome);
+		}	
+		
+		private function onBrowseJavaHome():void
+		{
+			directory.addEventListener(Event.SELECT, selectedJavaHome);
+			directory.browseForDirectory("Path to Java Home.");
+		}
+
+		private function selectedJavaHome(e:Event):void {
+			JAVA_HOME = javaHome.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, selectedJavaHome);
+		}		
+*/
+		
+/*
+		private function onBrowseMaKeyStore():void
+		{
+			directory.addEventListener(Event.SELECT, browsedMaKeyStore);
+			directory.browse();
+		}
+
+        
+		private function browsedMaKeyStore(e:Event):void {
+			MA_KEYSTORE = maKeystore.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, browsedMaKeyStore);
+			parseMaKeyStore();
+		}	
+		
+		
+		private function parseMaKeyStore():void
+		{
+			//var settingsFilePath:String = File.applicationDirectory.nativePath + "/settings/";
+			
+			trace(MA_KEYSTORE);
+			var settingsFileString:String = loadFileToString( MA_KEYSTORE);
+			
+			var settings:Array = settingsFileString.split("\n");
+			
+			for each( var setting:String in settings ) 
+			{
+				var settingBit:Array = setting.split("::|::");
+
+				switch( settingBit[0] )
+				{
+					case "KEYSTORE":
+					{
+						KEYSTORE = settingBit[1];
+						//keystore.text = KEYSTORE;
+						break;
+					}
+					case "KEYPASS":
+					{
+						KEYPASS = settingBit[1];
+						//keypass.text = KEYPASS;
+						break;
+					}
+					case "ALIAS":
+					{
+						ALIAS = settingBit[1];
+						//alias.text = ALIAS;
+						break;
+					}	
+				}
+		
+			}
+		}
+        */
+		
+		/*
+		private function onBrowseKeyStore():void
+		{
+			directory.addEventListener(Event.SELECT, browsedKeyStore);
+			directory.browse();
+		}
+
+		private function browsedKeyStore(e:Event):void {
+			KEYSTORE = keystore.text = directory.nativePath;
+			directory.removeEventListener(Event.SELECT, browsedKeyStore);
+		}		
+		*/
+		
+		/*
+		private function onPostPatchOperationChangedAnt():void
+		{
+			if ( bAntBuild.selected )
+			{
+				//bSignAPK.selected = false;
+				//bInsallOnDevice.selected = false;
+			}	
+
+			else 
+			{
+				bSignAPK.selected = false;
+				bInsallOnDevice.selected = false;
+			}	
+		}
+        */
+
+        /*
+		private function onPostPatchOperationChangedSignAPK():void
+		{
+			if ( bSignAPK.selected )
+			{
+				bAntBuild.selected = true;
+			}
+
+			else 
+			{
+				bInsallOnDevice.selected = false;
+			}
+
+			//bAntBuild
+			//bSignAPK
+			//bInsallOnDevice
+		}
+        */
+		
+        /*
+		private function onPostPatchOperationChangedInstall():void
+		{
+			if ( bInsallOnDevice.selected )
+			{
+				bSignAPK.selected = true;
+				bAntBuild.selected = true;
+			}
+		}
+        */
+	
+		private function onSaveSettings():void
+		{
+			//trace("save settings");
+			var settingsFilePath:String = File.applicationDirectory.nativePath + "/settings/";
+			
+			var settings:String = "";
+			var split:String = "::|::";
+			//settings += "S3DX_PATH=" + S3DX_PATH + "\n";
+			//settings += "ADMOB_JAR" + split + ADMOB_JAR + "\n";
+			settings += "PROJ_PATH" + split + PROJ_PATH + "\n";
+			settings += "BUNDLE_ID" + split + BUNDLE_ID + "\n";
+			settings += "PROJ_NAME" + split + PROJ_NAME + "\n";
+			
+			settings += "MA_KEYSTORE" + split + MA_KEYSTORE + "\n";
+			
+			/*
+			settings += "KEYSTORE" + split + KEYSTORE + "\n";
+			settings += "KEYPASS" + split + KEYPASS + "\n";
+			settings += "ALIAS" + split + ALIAS + "\n";
+			*/
+			
+			/*
+			settings += "SL_GAME_ID" + split + SL_GAME_ID + "\n";
+			settings += "SL_GAME_SECRET" + split + SL_GAME_SECRET + "\n";
+			*/
+			
+			/*
+			settings += "JAVA_HOME" + split + JAVA_HOME + "\n";
+			settings += "ANDROID_SDK_HOME" + split + ANDROID_SDK_HOME + "\n";
+			settings += "ANT_HOME" + split + ANT_HOME + "\n";
+			*/
+			
+			
+			
+			var file:File = File.desktopDirectory.resolvePath(settingsFilePath + "settings.xml");
+			var fileStream:FileStream = new FileStream();
+			fileStream.open(file, FileMode.WRITE);
+			fileStream.writeUTFBytes(settings);
+			fileStream.close();
+		}
+		
+		private function loadSettings():void
+		{
+			//trace("load settings");
+			var settingsFilePath:String = File.applicationDirectory.nativePath + "/settings/";
+			
+			var settingsFileString:String = loadFileToString( settingsFilePath + "settings.xml");
+			
+			var settings:Array = settingsFileString.split("\n");
+			
+			for each( var setting:String in settings ) 
+			{
+				var settingBit:Array = setting.split("::|::");
+
+				switch( settingBit[0] )
+				{
+					/*
+					case "S3DX_PATH":
+					{
+						S3DX_PATH = settingBit[1];
+						s3dx.text = S3DX_PATH;
+						break;
+					}
+					*/
+					/*case "ADMOB_JAR":
+					{
+						ADMOB_JAR = settingBit[1];
+						admobjar.text = ADMOB_JAR;
+						break;
+					}*/
+					case "PROJ_PATH":
+					{
+						PROJ_PATH = settingBit[1];
+						proj.text = PROJ_PATH;
+						break;
+					}
+					case "BUNDLE_ID":
+					{
+						BUNDLE_ID = settingBit[1];
+						buid.text = BUNDLE_ID;
+						break;
+					}
+					case "PROJ_NAME":
+					{
+						PROJ_NAME = settingBit[1];
+						projname.text = PROJ_NAME;
+						break;
+					}
+					
+                    /*
+					case "MA_KEYSTORE":
+					{
+						MA_KEYSTORE = settingBit[1];
+						maKeystore.text = MA_KEYSTORE;
+						parseMaKeyStore();
+						break;
+					}*/
+                    
+					/*
+					case "KEYSTORE":
+					{
+						KEYSTORE = settingBit[1];
+						keystore.text = KEYSTORE;
+						break;
+					}
+					case "KEYPASS":
+					{
+						KEYPASS = settingBit[1];
+						keypass.text = KEYPASS;
+						break;
+					}
+					case "ALIAS":
+					{
+						ALIAS = settingBit[1];
+						alias.text = ALIAS;
+						break;
+					}	
+					*/
+					
+					/*
+					case "SL_GAME_ID":
+					{
+						SL_GAME_ID = settingBit[1];
+						slGameId.text = SL_GAME_ID;
+						break;
+					}	
+					case "SL_GAME_SECRET":
+					{
+						SL_GAME_SECRET = settingBit[1];
+						slGameSecret.text = SL_GAME_SECRET;
+						break;
+					}*/	
+					/*
+					case "JAVA_HOME":
+					{
+						JAVA_HOME = settingBit[1];
+						javaHome.text = JAVA_HOME;
+						break;
+					}	
+					case "ANDROID_SDK_HOME":
+					{
+						ANDROID_SDK_HOME = settingBit[1];
+						androidHome.text = ANDROID_SDK_HOME;
+						break;
+					}	
+					case "ANT_HOME":
+					{
+						ANT_HOME = settingBit[1];
+						antHome.text = ANT_HOME;
+						break;
+					}	
+							*/		
+				}
+			}
+		}
+		
+		private function onTextInput():void
+		{
+			trace("PROJ_NAME:" + PROJ_NAME);
+            log("PROJ_NAME:" + PROJ_NAME);
+		}
+		
+        
+        private function copyToClipboard():void
+        {
+           // log("tata");
+           var total:String = "";
+           for each(var s:String in consoleOutput )
+           {
+               total += s + "\n";
+           }
+           System.setClipboard(total); //consoleOutput.toString()
+        }
+        
+		]]>		
+	</mx:Script>
+
+	<mx:VBox width="100%" >
+		
+		<mx:HBox width="100%" backgroundColor="black">
+			<mx:Image source="settings/header.png" />
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label width="100%" text="General Settings:" />
+			<mx:Button label="Save Settings" click="onSaveSettings();" />
+		</mx:HBox>
+        <!--<mx:VBox width="100%" borderStyle="solid" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+			<mx:HBox width="100%">
+				<mx:Label text="Modern Alchemists Keystore Config File:" />
+				<mx:TextInput id="maKeystore" change="MA_KEYSTORE = maKeystore.text; parseMaKeyStore();" width="100%" text=""/>
+				<mx:Button label="..." click="onBrowseMaKeyStore();" width="30" />
+			</mx:HBox>
+		</mx:VBox>
+        -->
+            
+		<mx:Label text="Project Settings:" />
+		<mx:VBox width="100%" borderStyle="solid" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+			<mx:HBox width="100%">
+				<mx:Label text="Path to Android/Eclipse-Project:" />
+				<mx:TextInput id="proj" change="PROJ_PATH = proj.text" width="100%" text=""/>
+				<mx:Button label="..." click="onBrowseProjectPath();" width="30" />
+			</mx:HBox>
+			
+			<mx:HBox width="100%">
+				<mx:Label text="Bundle Identifier:" />
+				<mx:TextInput id="buid" change="BUNDLE_ID = buid.text" width="100%" text=""/>
+			</mx:HBox>
+
+			<mx:HBox width="100%">
+				<mx:Label text="Project Name:" />
+				<mx:TextInput id="projname" change="PROJ_NAME = projname.text;" width="100%" text=""/>
+			</mx:HBox>
+
+            <!--
+			<mx:HBox width="100%">
+				<mx:Label text="Post Patch Operations:" />
+				<mx:CheckBox selected="true" id="bAntBuild" change="onPostPatchOperationChangedAnt();" />
+				<mx:Label text="ANT Build" />
+				
+				<mx:CheckBox selected="true" id="bSignAPK" change="onPostPatchOperationChangedSignAPK();" />
+				<mx:Label text="Sign APK" />
+				
+				<mx:CheckBox selected="true" id="bInsallOnDevice" change="onPostPatchOperationChangedInstall();" />
+				<mx:Label text="Install on connected Device" />
+			</mx:HBox>
+            -->
+		</mx:VBox>
+		
+		<mx:Label text="Patching:" />
+		<mx:VBox width="100%" borderStyle="solid" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button label="INTEGRATE ADMOB" click="prePatch(); patchAdMob(); postPatch();" width="100%" />
+				<!--<mx:Button label="INTEGRATE SCORELOOP" click="prePatch(); patchScoreLoop(); postPatch();" width="100%" />-->
+				<!--<mx:Button label="INTEGRATE ADMOB AND SCORELOOP" click="prePatch(); patchAdMob(); patchScoreLoop(); postPatch();" width="100%" />-->
+			</mx:HBox>
+			<!--<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button label="INTEGRATE ADMOB ON SCORELOOP" click="patchAdMob(); postPatch();" width="100%" />
+				<mx:Button label="INTEGRATE SCORELOOP ON ADMOB" click="patchScoreLoop(); postPatch();" width="100%" />
+			</mx:HBox>-->
+		</mx:VBox>
+		
+		<mx:HBox width="100%">
+            <mx:Label width="100%" text="Console Output:" />
+            <mx:Button label="Copy Log to Clipboard" click="copyToClipboard();" />
+        </mx:HBox>
+		<mx:List  width="100%" height="100%" dataProvider="{consoleOutput}" verticalScrollPosition="{l.maxVerticalScrollPosition}" id="l" color="#000000" rowHeight="20" selectable="false" fontFamily="Courier">
+			
+</mx:List>
+		
+
+	</mx:VBox>
+</mx:WindowedApplication>

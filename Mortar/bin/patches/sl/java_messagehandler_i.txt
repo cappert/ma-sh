@@ -1,0 +1,107 @@
+				
+		
+			
+			case MSG_SL_SHOW_MAIN_SCREEN:
+			{
+				//Log.i("______________________HANDLE_MESSAGE","MSG_SL_SHOW_MAIN_SCREEN");
+				oThis.startActivity(new Intent(oThis, EntryScreenActivity.class));	
+			}
+			break;
+			
+			case MSG_SL_SHOW_LEADER_BOARD:
+			{
+				int nMode = (int)msg.arg1;
+				int nType = (int)msg.arg2;
+				
+				//Log.i("______________________HANDLE_MESSAGE","MSG_SL_SHOW_MAIN_SCREEN:" + nMode + "/" +nType );
+				
+			 	final Intent intent = new Intent(oThis, LeaderboardsScreenActivity.class);
+				intent.putExtra(LeaderboardsScreenActivity.MODE, nMode); // optionally specify the mode you want the leaderboard to be opened in
+				switch( nType )
+				{
+				case 0:
+					intent.putExtra(LeaderboardsScreenActivity.LEADERBOARD, LeaderboardsScreenActivity.LEADERBOARD_GLOBAL); // optionally specify the leaderboard to open
+					break;
+				case 1:
+					intent.putExtra(LeaderboardsScreenActivity.LEADERBOARD, LeaderboardsScreenActivity.LEADERBOARD_24h); // optionally specify the leaderboard to open
+					break;
+				case 2:
+					intent.putExtra(LeaderboardsScreenActivity.LEADERBOARD, LeaderboardsScreenActivity.LEADERBOARD_FRIENDS); // optionally specify the leaderboard to open
+					break;
+					
+				}
+				
+				oThis.startActivity(intent);  
+							
+			}
+			break;
+			
+			case MSG_SL_SHOW_WELCOME_BACK:
+			{
+				int nDelayInMsec = (int)msg.arg1;
+				
+				//Log.i("______________________HANDLE_MESSAGE","MSG_SL_SHOW_WELCOME_BACK:" + nDelayInMsec);
+				
+				ScoreloopManagerSingleton.get().showWelcomeBackToast(nDelayInMsec);
+			}
+			break;
+			
+			case MSG_SL_SUBMIT_ACHIEVEMENTS:
+			{
+				//Log.i("______________________HANDLE_MESSAGE","MSG_SL_SUBMIT_ACHIEVEMENTS");
+				
+				ScoreloopManagerSingleton.get().submitAchievements(null);
+			}
+			break;
+			
+			case MSG_SL_UNLOCK_ACHIEVEMENT :
+			{
+				Bundle data = msg.getData();
+				String sId = data.getString("sId");
+				boolean bShowToast = data.getBoolean("bShowToast");
+				boolean bSubmitNow = data.getBoolean("bSubmitNow");
+		    	
+				
+			//	Log.i("______________________HANDLE_MESSAGE","MSG_SL_UNLOCK_ACHIEVEMENT:"
+					//	+ sId + "/" +bShowToast + "/" + bSubmitNow );
+				
+		    	//Log.i("_____________", "unlockAchievement");
+		    	if( !ScoreloopManagerSingleton.get().hasLoadedAchievements())
+		    	{
+		    		//Log.i("_____________", "Loading Achievements");
+		    		ScoreloopManagerSingleton.get().loadAchievements(new AchievementRunnable(sId, bShowToast, bSubmitNow) );
+		    	}
+		    	else
+		    	{
+		    		//Log.i("_____________", "before achieveAward");
+		    		ScoreloopManagerSingleton.get().achieveAward(sId, bShowToast, bSubmitNow);
+		    	}
+		    				
+			}
+			break;
+			
+			case MSG_SL_SUBMIT_SCORE:
+			{
+				Bundle data = msg.getData();
+				double nScore = data.getDouble("nScore");
+				int nMode = data.getInt("nMode");
+					    
+				//Log.i("______________________HANDLE_MESSAGE","MSG_SL_SUBMIT_SCORE:" + nScore + "/" + nMode);
+				
+		        ScoreloopManagerSingleton.get().setOnScoreSubmitObserver(oThis);
+		        //ScoreloopManagerSingleton.get().onGamePlayEnded(nScore, nMode);
+		        if(nMode >= 0)
+		        {
+		        	ScoreloopManagerSingleton.get().onGamePlayEnded(nScore, nMode);
+		        }
+		        else
+		        {
+		        	ScoreloopManagerSingleton.get().onGamePlayEnded(nScore, null);
+		        }
+				
+			
+			}
+			break;
+			
+			
+			

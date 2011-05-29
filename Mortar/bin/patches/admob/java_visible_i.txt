@@ -1,0 +1,19 @@
+
+			case AdMobWrapper.MSG_ADMOB:
+			{
+		    	if( msg.arg1 == View.INVISIBLE )
+				{
+					AdMobWrapper.getInstance().hideAds();
+				}
+				else
+				{
+					AdMobWrapper.getInstance().showAds();
+				}	
+			}
+			break;				
+			case AdMobWrapper.MSG_ADMOB_LAYOUT:
+			{
+	    		AdMobWrapper.getInstance().startWrapper(oViewGroup);
+			}
+			break;	
+			

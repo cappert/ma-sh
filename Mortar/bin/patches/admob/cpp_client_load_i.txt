@@ -1,0 +1,3 @@
+	
+maad_registerCallbacks( pJavaVM );
+

@@ -1,0 +1,1 @@
+case MSG_ENABLE_VIBRATOR :

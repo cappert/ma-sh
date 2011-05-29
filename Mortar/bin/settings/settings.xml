@@ -1,0 +1,4 @@
+PROJ_PATH::|::D:\git\MortarTest\MortarTest_Android
+BUNDLE_ID::|::com.modernalchemists.mortartest
+PROJ_NAME::|::MortarTest
+MA_KEYSTORE::|::D:\homeoffice\Mortar-Dev\Mortar\bin/settings/MaKeystore.maks

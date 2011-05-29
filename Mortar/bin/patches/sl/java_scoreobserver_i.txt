@@ -1,0 +1,124 @@
+   
+   
+   public static void showMainScreen()
+    {
+    	Message msg     = new Message ( ) ;
+
+		msg.what        = MSG_SL_SHOW_MAIN_SCREEN ;
+		msg.obj         = oThis ;
+
+		oThis.oUIHandler  	.sendMessage( msg ) ;
+    }
+	
+   
+   /**
+     * 
+     * @param mode game mode
+     * @param type 0:global, 1:2h4. 2:friends
+     */
+    public static void showLeaderBoard(int nMode, int nType)
+    {
+    	Message msg     = new Message ( ) ;
+
+		msg.what        = MSG_SL_SHOW_LEADER_BOARD;
+		msg.obj         = oThis ;
+		msg.arg1 		= nMode;
+		msg.arg2 		= nType;
+
+    	oThis.oUIHandler  	.sendMessage( msg ) ;
+    }
+    
+    /**
+     * 
+     * @param nDelayInMsec Delay in msec.
+     */
+    public static void showWelcomeBack(int nDelayInMsec)
+    {
+    	Message msg     = new Message ( ) ;
+
+		msg.what        = MSG_SL_SHOW_WELCOME_BACK;
+		msg.obj         = oThis ;
+		msg.arg1 		= nDelayInMsec;
+
+    	oThis.oUIHandler  	.sendMessage( msg ) ; 	
+    }
+    
+    public static void submitAllAchievements()
+    {
+       	Message msg     = new Message ( ) ;
+
+		msg.what        = MSG_SL_SUBMIT_ACHIEVEMENTS;
+		msg.obj         = oThis ;
+
+		oThis.oUIHandler  	.sendMessage( msg ) ; 	
+    }
+     
+    public static void unlockAchievement(String sId, boolean bShowToast, boolean bSubmitNow )
+    {
+       	Message msg     = new Message ( ) ;
+
+		msg.what        = MSG_SL_UNLOCK_ACHIEVEMENT;
+		msg.obj         = oThis ;
+		
+		Bundle data = new Bundle();
+
+		data.putString("sId", sId);
+		data.putBoolean("bShowToast", bShowToast);
+		data.putBoolean("bSubmitNow", bSubmitNow);
+
+		msg.setData(data);
+
+    	oThis.oUIHandler  	.sendMessage( msg ) ; 		
+    }
+    
+    public static void submitScore(double nScore, int nMode)
+    {
+       	Message msg     = new Message ( ) ;
+
+		msg.what        = MSG_SL_SUBMIT_SCORE;
+		msg.obj         = oThis ;
+		
+		Bundle data = new Bundle();
+		data.putDouble("nScore", nScore);
+		data.putInt("nMode", nMode);
+		msg.setData(data);
+
+    	oThis.oUIHandler  	.sendMessage( msg ) ; 	
+     }
+    
+	@Override
+	public void onScoreSubmit(int status, Exception error) {
+		submitStatus = status;
+	    startActivityForResult(new Intent(this, ShowResultOverlayActivity.class), SHOW_RESULT);
+	} 
+	
+	@Override
+	protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
+
+	      switch (requestCode) {
+
+	              case SHOW_RESULT:
+	                     if (submitStatus != this.STATUS_ERROR_NETWORK) {
+	                        // Show the post-score activity unless there has been a network error.
+	                    	// Log.i("__________onActivityResult","SHOW_RESULT if");
+	                        startActivityForResult(new Intent(this, PostScoreOverlayActivity.class), POST_SCORE);
+	                     } else { 
+	                    	// Log.i("__________onActivityResult","SHOW_RESULT else");
+	                      //  finish();
+	                     }
+	               
+	                     break;
+
+	             case POST_SCORE:
+	            	 		//Log.i("__________onActivityResult","POST_SCORE");
+	                        // Here we get notified that the PostScoreOverlay has finished.
+	                        // in this example this simply means that we're ready to return to the main activity
+	                       // finish();
+	                        break;
+	             default:
+	                        break;
+	     }
+	  }
+	  
+
+	  

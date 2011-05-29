@@ -1,0 +1,2 @@
+
+AdMobWrapper.getInstance().initWrapper(oThis, oThis, oUIHandler);

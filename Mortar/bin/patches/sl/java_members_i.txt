@@ -1,0 +1,15 @@
+
+	//SCORELOOP:
+	private static final int SHOW_RESULT = 0;
+	private static final int POST_SCORE = 1;
+	private static int submitStatus = -1;
+	
+	public static final int MSG_SL_SHOW_MAIN_SCREEN 	= 600 ;
+	public static final int MSG_SL_SHOW_LEADER_BOARD 	= 601 ;
+	public static final int MSG_SL_SHOW_WELCOME_BACK 	= 602 ;
+	public static final int MSG_SL_SUBMIT_ACHIEVEMENTS 	= 603 ;
+	public static final int MSG_SL_UNLOCK_ACHIEVEMENT 	= 604 ;
+	public static final int MSG_SL_SUBMIT_SCORE 	= 605 ;
+	//SCORELOOP END.
+	
+	
