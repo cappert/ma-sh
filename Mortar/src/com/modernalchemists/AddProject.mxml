@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!-- containers\layouts\myComponents\MyLoginForm.mxml -->
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml">
+    
+    <mx:Script>
+        <![CDATA[
+            import mx.managers.PopUpManager;
+            
+            public var inst:com.modernalchemists.Main = null;
+            
+            private function processLogin():void {
+                // Check credentials (not shown) then remove pop up.
+                inst.addNewProject(projectname.text);
+                PopUpManager.removePopUp(this);
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:Form>
+        <mx:FormItem label="Project File Name:">
+            <mx:TextInput id="projectname" width="100%"/>
+        </mx:FormItem> 
+    </mx:Form>
+    <mx:HBox> 
+        <mx:Button click="processLogin();" label="OK"/> 
+        <mx:Button 
+            label="Cancel"
+            click="PopUpManager.removePopUp(this);"/> 
+    </mx:HBox> 
+</mx:TitleWindow>
