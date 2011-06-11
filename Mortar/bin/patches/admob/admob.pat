@@ -29,12 +29,6 @@
 
 LOG Starting Admob patching process...
 
-
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-LOG TODO: pre patch!
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 COF %THIS%/admob-sdk-android.jar 		§§§ %PROJ%/libs/admob.jar
 COF %THIS%/AdMobWrapper.java 			§§§ %PROJ%/src/com/modernalchemists/maad/android/AdMobWrapper.java
 COF %THIS%/maad.c						§§§ %PROJ%/jni/maad.c
@@ -56,19 +50,3 @@ IFB %PROJ%/AndroidManifest.xml §§§ %THIS%/amanifest_puid_b.txt §§§ %THIS%/amanif
 //JNI:
 IFA %PROJ%/jni/S3DClient.cpp §§§ %THIS%/cpp_client_include_a.txt 	§§§ %THIS%/cpp_client_include_i.txt
 IFA %PROJ%/jni/S3DClient.cpp §§§ %THIS%/cpp_client_load_a.txt 		§§§ %THIS%/cpp_client_load_i.txt
-
-
-//COF %THIS%/admob-sdk-android.jar 			§§§ %PROJ%/libs/admob.jar
-//COF D:\Program Files\Common Files\test.txt 	§§§ %PROJ%/misc.txt
-
-//Replace in file:
-//replaceInFile( PROJ_PATH + "/AndroidManifest.xml", "android:launchMode=\"singleInstance\"",	"android:launchMode=\"standard\"" );
-//RIF file findString replaceItWith
-//RIF myFile.xml §§§ The string to find §§§ The string to replace it with...
-
-//IFA after insert
-//IFA %GAME%			§§§	java_import_a.txt 	§§§ java_import_i.txt
-//IFB %PROJ%/test		§§§	java_visible_b.txt 	§§§ java_visible_i.txt
-
-//ISA %GAME%			§§§	java_import_a.txt 	§§§ java_import_i.txt
-//ISB %PROJ%/test		§§§	java_visible_b.txt 	§§§ java_visible_i.txt

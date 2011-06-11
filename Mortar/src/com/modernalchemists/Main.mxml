@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml"
 creationComplete="creationCompleteHandler();"
-    width="1024" height="890" paddingTop="0" paddingLeft="0" paddingRight="0" paddingBottom="0"
+   backgroundColor="white"  width="1024" height="890" paddingTop="0" paddingLeft="0" paddingRight="0" paddingBottom="0"
 >
     <mx:Script>
         <![CDATA[
@@ -1085,7 +1085,7 @@ creationComplete="creationCompleteHandler();"
 		]]>		
 	</mx:Script>
 
-	<mx:VBox width="100%" horizontalAlign="center" >
+	<mx:VBox width="100%" horizontalAlign="center">
 		
 		<mx:HBox width="100%" backgroundColor="black">
 			<mx:Image source="settings/header.png" />
@@ -1125,7 +1125,7 @@ creationComplete="creationCompleteHandler();"
             </mx:HBox>
 		</mx:VBox>
 		
-		<mx:Label text="Patching:" />
+		<mx:Label styleName="containerVBox"  text="Patching:" />
 		<mx:VBox width="100%" borderStyle="solid" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
             <mx:HBox width="100%">
                 <mx:VBox width="50%">
