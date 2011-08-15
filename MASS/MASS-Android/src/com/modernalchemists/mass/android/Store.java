@@ -26,7 +26,7 @@ import com.modernalchemists.mass.android.Consts.ResponseCode;
 import com.modernalchemists.mass.android.config.Config;
 import com.modernalchemists.mass.android.config.Config.ProductDescriptor;
 
-import com.modernalchemists.inappbilling.R;
+import com.modernalchemists.aeonracerlite.R;
 
 /*
  * Store class, implemented as Singleton
@@ -49,17 +49,29 @@ public class Store
     public static final int DIALOG_BILLING_NOT_SUPPORTED_ID = 2;
     
     // vars
-    private Context context;
+    //private Context context;
+    private Activity activity; //Test by and for Zog.
     private String mPayloadContents = null;
     private String mReceivedData = null;
     
     public void setReceivedData(String signedData)
     {
+    	if(Consts.DEBUG)
+    	{
+    		Log.d("Blubbbb", "signedData in setRecievedData: " + signedData);
+    	}
 		this.mReceivedData = signedData;
 	}
     
+    
+
+    
     public String getReceivedData()
     {
+    	if(Consts.DEBUG)
+    	{
+    		Log.d("Blubbbb", "signedData in getRecievedData: " + this.mReceivedData);
+    	}
     	return this.mReceivedData;
     }
 
@@ -90,6 +102,8 @@ public class Store
 		// log
 		Store.getInstance().log("requestProductInfo("+productId+")");
         
+		//Store.getInstance().mReceivedData = null;
+		
 		// do request (sync)
 		Store.getInstance().onProductInfoReceived( Config.getInstance().getProductById(productId) );
 	}
@@ -140,12 +154,25 @@ public class Store
 		}
 	}
 	
+	/**
+	 * This function is called whenever a buy request has been sent successfully to the server.
+	 * You may use this to unlock items before google actually confirms the purchase (which may take days).
+	 */
+	public void onPurchaseSent()
+	{
+		// log
+		log("onPurchaseSent(" + ((cProduct != null) ? cProduct.productId : null) + ")");
+		if(cProduct == null) log(" Product is null, it probably is the result of a restore transaction request.");
+		
+		// todo
+		log("TODO: onPurchaseSent() ends in Java context: java > c > ShiVa implementation is still missing.");
+	}
+	
 	public void onProductBought()
 	{
 		// log
 		log("onProductBought(" + ((cProduct != null) ? cProduct.productId : null) + ")");
 		if(cProduct == null) log(" Product is null, it probably is the result of a restore transaction request.");
-			
 		
 		// native call
 		try{
@@ -225,9 +252,9 @@ public class Store
     {
     	mReceivedData = null;
     	
-        SharedPreferences prefs = ((Activity)this.context).getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences prefs = this.activity.getPreferences(Context.MODE_PRIVATE);
         boolean initialized = prefs.getBoolean(DATA_INITIALIZED, false);
-        if (true) // (!initialized) TODO: remove this, restore data always (necessary due to buggy google API)
+        if(true)  // (!initialized) // fix for Googles nasty API
         {
             mBillingService.restoreTransactions();
             // log
@@ -246,7 +273,7 @@ public class Store
 		
         // Update the shared preferences so that we don't perform
         // a RestoreTransactions again.
-        SharedPreferences prefs = ((Activity)this.context).getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences prefs = this.activity.getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = prefs.edit();
         edit.putBoolean(DATA_INITIALIZED, true);
         edit.commit();
@@ -286,20 +313,20 @@ public class Store
     }
 	
     // -- Lifecycle (mirrors activity lifecycle) ------------------------------------
-    public void init(Context context)
+    public void init(Activity act)
     {
     	log("MA InAppBilling STORE: v1.7");
     	log("Debug log messages are:" + (Consts.DEBUG ? "on" : "off"));
     	
     	// log
-    	log("init("+context+")");
+    	log("init("+act+")");
     	
-    	this.context = context;
+    	this.activity = act;
     	
     	mHandler = new Handler();
-        mMassPurchaseObserver = new MassPurchaseObserver((Activity)this.context, mHandler);
+        mMassPurchaseObserver = new MassPurchaseObserver(this.activity, mHandler);
         mBillingService = new BillingService();
-        mBillingService.setContext(this.context);
+        mBillingService.setContext(this.activity);
 
         // Check if billing is supported.
         ResponseHandler.register(mMassPurchaseObserver);
@@ -341,10 +368,18 @@ public class Store
     public void destroy()
     {
     	// log
-    	log("destroy()");
+    	log("destroy()---");
         
     	ResponseHandler.unregister(mMassPurchaseObserver);
     	mBillingService.unbind();
+    	
+    	
+        activity.stopService(new Intent(activity, BillingService.class));
+        //mService = null;
+        activity = null;
+        //complete = null;
+    	
+    	//mBillingService.stopSelf();
     }
     
     public void log( String msg )
@@ -360,7 +395,7 @@ public class Store
     // -- getter & setter
     public Context getContext()
     {
-    	return this.context;
+    	return this.activity;
     }
     
     // -- display Dialog stuff ---------------------------------------------------------------------
@@ -373,10 +408,10 @@ public class Store
         switch (id)
         {
 	        case DIALOG_CANNOT_CONNECT_ID:
-	            ((Activity)this.context).runOnUiThread(new RunnableDialog(R.string.cannot_connect_title, R.string.cannot_connect_message));
+	            this.activity.runOnUiThread(new RunnableDialog(R.string.cannot_connect_title, R.string.cannot_connect_message));
 	        	break;
 	        case DIALOG_BILLING_NOT_SUPPORTED_ID:
-	        	((Activity)this.context).runOnUiThread(new RunnableDialog(R.string.cannot_connect_title, R.string.cannot_connect_message));
+	        	this.activity.runOnUiThread(new RunnableDialog(R.string.cannot_connect_title, R.string.cannot_connect_message));
 	        	break;
         }
     }
